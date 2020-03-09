@@ -59,7 +59,7 @@ class PostController extends Controller
      */
     public function show(Post $post)
     {
-        //
+        return view('posts.detail', ['post' => $post]);
     }
 
     /**
@@ -70,7 +70,7 @@ class PostController extends Controller
      */
     public function edit(Post $post)
     {
-        //
+        return view('posts.edit', ['post' => $post]);
     }
 
     /**
@@ -82,7 +82,16 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post)
     {
-        //
+        $this->validate($request, [
+            'title' => 'required | min:3',
+            'content' => 'required'
+        ]);
+
+        $post->title = $request->title;
+        $post->content = $request->content;
+        $post->save();
+
+        return redirect('/posts')->with('success', 'Cập nhật thành công');
     }
 
     /**
@@ -93,6 +102,8 @@ class PostController extends Controller
      */
     public function destroy(Post $post)
     {
-        //
+        $post->delete();
+
+        return redirect('/posts')->with('success', 'Xóa thành công');
     }
 }
