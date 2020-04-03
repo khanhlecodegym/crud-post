@@ -3,10 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Post;
+use App\Tag;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PostController extends Controller
 {
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -14,9 +26,13 @@ class PostController extends Controller
      */
     public function index()
     {
-        $posts = Post::all();
+        if (Auth::user()) {
+            $posts = Post::all();
+            return view('posts.index', compact('posts'));
+        }
 
-        return view('posts.index', compact('posts'));
+        return redirect('/login');
+
     }
 
     /**
@@ -26,8 +42,9 @@ class PostController extends Controller
      */
     public function create()
     {
+        $tags = Tag::all();
 
-        return view('posts.create');
+        return view('posts.create', compact('tags'));
     }
 
     /**
@@ -38,15 +55,27 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
+        // dd($request->all());
         $this->validate($request, [
             'title' => 'required | min:3',
-            'content' => 'required'
-        ]);
+            'content' => 'required',
+            'image_post' => 'required|image|mimes:jpeg,jpg,png'
+            ]);
+
 
         $post = new Post();
         $post->title = request('title');
         $post->content = request('content');
+        $post->user_id = Auth::user()->id;
+        $post->user_update_id = Auth::user()->id;
+        $post->image = base64_encode(file_get_contents($request->file('image_post')->getRealPath()));
+
+
         $post->save();
+
+        if(request('tag')) {
+            $post->tags()->attach(request('tag'));
+        }
 
         return redirect('/posts/create')->with('success', 'Tạo mới thành công');
     }
@@ -70,7 +99,12 @@ class PostController extends Controller
      */
     public function edit(Post $post)
     {
-        return view('posts.edit', ['post' => $post]);
+        $tags = Tag::all();
+        // dd($post->tags->toArray());
+        // $selected = $post->tags->lists('id');
+
+
+        return view('posts.edit', compact(['tags', 'post']));
     }
 
     /**
@@ -82,14 +116,21 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post)
     {
+    //    dd(Auth::user()->id);
         $this->validate($request, [
             'title' => 'required | min:3',
-            'content' => 'required'
+            'content' => 'required',
+            'image_post' => 'image|mimes:jpeg,jpg,png'
         ]);
 
         $post->title = $request->title;
         $post->content = $request->content;
+        $post->user_id = Auth::user()->id;
+        if($request->file('image_post')) {
+            $post->image = base64_encode(file_get_contents($request->file('image_post')->getRealPath()));
+        }
         $post->save();
+        $post->tags()->sync(request('tag'));
 
         return redirect('/posts')->with('success', 'Cập nhật thành công');
     }
