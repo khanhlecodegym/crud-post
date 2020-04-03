@@ -32,10 +32,8 @@
 
 @push('index-toastr')
     <script>
-        let str = {{session('success')}}
-        if (str =! '') {
-            toastr.success(str);
-        }
-
+        @if (session('success'))
+            toastr.success("{{ session()->get('success') }}")
+        @endif
     </script>
 @endpush
